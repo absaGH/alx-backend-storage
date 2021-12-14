@@ -6,5 +6,5 @@ def update_topics(mongo_collection, name, topics):
     client = MongoClient('mongodb://127.0.0.1:27017')
     query = { "name": name }
     newValues = { "$set": { "topics": topics } }
-    mongo_collection.update_one(query, newValues)
+    mongo_collection.update_many(query, newValues)
     
