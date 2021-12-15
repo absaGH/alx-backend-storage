@@ -2,8 +2,21 @@
 """python module to interact with redis server"""
 import redis
 import uuid
-#import typer
-from typing import Union
+from typing import Union, Optional, Callable
+from functools import wraps
+
+
+def count_calls(method: Callable) -> Callable:
+    """decorator function"""
+    key = method.__qualname__
+
+    @wraps(method)
+    def wrapper(self, *args, **kwds):
+        """method wrapper"""
+        self._redis.incr(key)
+        return method(self, *args, **kwds)
+
+    return wrapper
 
 
 class Cache:
@@ -11,22 +24,21 @@ class Cache:
 
     def __init__(self):
         """ iniitalize Redis DB """
-        self.___redis = redis.Redis()
-        self.___redis.flushdb()
+        self._redis = redis.Redis()
+        self._redis.flushdb()
 
+    @count_calls
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """ create a random key & stores it with data """
         key: uuid.UUID = uuid.uuid1()
-        self.___redis.set(str(key), data)
+        self._redis.set(str(key), data)
         return str(key)
 
     def get(self, key: str, fn: Optional[Callable]
             = None) -> Union[str, bytes, int, float]:
         """convert the data back to the desired format"""
-        if (!self.___redis.exists(key)):
-            return 0
+        data = self._redis.get(key)
         if fn:
-            data = self.___redis.get(key)
             data = fn(data)
         return data
 
